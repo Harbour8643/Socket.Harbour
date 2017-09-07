@@ -3,6 +3,7 @@
 
 SocketClientTest
 
+
 class Program
     {
         static SocketLibrary.Client client;
@@ -18,7 +19,6 @@ class Program
                 sendMsg();
             }
         }
-
         private static void client_MessageSent(object sender, SocketLibrary.SocketBase.MessageEventArgs e)
         {
             Console.WriteLine(e.Connecction.ConnectionName + "发送成功");
