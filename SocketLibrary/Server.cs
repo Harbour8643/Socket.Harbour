@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
@@ -34,7 +35,28 @@ namespace SocketLibrary
             this.port = port;
         }
 
-        protected Thread _listenConnection;
+        /// <summary>
+        /// 获取连接集合
+        /// </summary>
+        /// <returns></returns>
+        public ConcurrentDictionary<string, Connection> GetConnections()
+        {
+            return this.Connections;
+        }
+
+        /// <summary>
+        /// 获取指定连接名的连接,查询不到返回null
+        /// </summary>
+        /// <param name="connectionName"></param>
+        /// <returns></returns>
+        public Connection GetConnection(string connectionName)
+        {
+            Connection connection;
+            this.Connections.TryGetValue(connectionName, out connection);
+            return connection;
+        }
+
+        private Thread _listenConnection;
         /// <summary>
         /// 打开监听
         /// </summary>
@@ -60,7 +82,7 @@ namespace SocketLibrary
                         TcpClient client = _listener.AcceptTcpClient();
                         string piEndPoint = client.Client.RemoteEndPoint.ToString();
                         Connection connection = new Connection(client, piEndPoint);
-                        this._connections.TryAdd(piEndPoint, connection);
+                        this.Connections.TryAdd(piEndPoint, connection);
                         this.OnConnected(this, connection);
                     }
                     Thread.Sleep(200);

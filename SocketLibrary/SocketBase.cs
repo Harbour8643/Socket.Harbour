@@ -14,31 +14,40 @@ namespace SocketLibrary
         /// <summary>
         /// 已连接的Socket
         /// </summary>
-        public ConcurrentDictionary<string, Connection> Connections
+        protected ConcurrentDictionary<string, Connection> Connections
         {
             get { return _connections; }
-            protected set { _connections = value; }
+            //protected set { _connections = value; }
         }
-        protected ConcurrentDictionary<string, Connection> _connections;
+        private ConcurrentDictionary<string, Connection> _connections;
 
         #endregion
-
+        /// <summary>
+        /// 基类初始化
+        /// </summary>
         protected SocketBase()
         {
             this._connections = new ConcurrentDictionary<string, Connection>();
         }
 
-        protected Thread _listenningthread;
+        /// <summary>
+        /// 监听线程
+        /// </summary>
+        private Thread _listenningthread;
 
+        /// <summary>
+        /// 开始监听
+        /// </summary>
         protected void StartListenAndSend()
         {
             _listenningthread = new Thread(new ThreadStart(Listenning));
             _listenningthread.Start();
         }
-
+        /// <summary>
+        /// 结束监听
+        /// </summary>
         protected void EndListenAndSend()
         {
-
             Thread.Sleep(200);//以防消息没有发完，或收完
             foreach (var keyValue in this._connections)
             {
@@ -49,7 +58,7 @@ namespace SocketLibrary
             _listenningthread.Abort();
         }
 
-        protected virtual void Listenning()
+        private void Listenning()
         {
             while (true)
             {
@@ -57,7 +66,6 @@ namespace SocketLibrary
                 foreach (var keyValue in this._connections)
                 {
                     //心跳检测
-
                     if (!this.HeartbeatCheck(keyValue.Value))
                     {
                         Connection remConn;
@@ -79,7 +87,7 @@ namespace SocketLibrary
             }
         }
 
-        #region 受保护的方法
+        #region 私有的方法
 
         /// <summary>
         /// 发送数据
@@ -145,18 +153,41 @@ namespace SocketLibrary
         #endregion
 
         #region 连接关闭事件
+        /// <summary>
+        /// 连接关闭事件
+        /// </summary>
         public class ConCloseMessagesEventArgs : EventArgs
         {
-            public string ConnectionName;
-            public ConcurrentQueue<Message> MessageQueue;
-            public Exception Exception;
+            /// <summary>
+            /// 连接名
+            /// </summary>
+            public string ConnectionName { get; }
+            /// <summary>
+            /// 未发送的消息集合
+            /// </summary>
+            public Message[] MessageQueue { get; }
+            /// <summary>
+            /// 错误信息
+            /// </summary>
+            public Exception Exception { get; }
+            /// <summary>
+            /// 初始化
+            /// </summary>
+            /// <param name="connectionName"></param>
+            /// <param name="messageQueue"></param>
+            /// <param name="exception"></param>
             public ConCloseMessagesEventArgs(string connectionName, ConcurrentQueue<Message> messageQueue, Exception exception)
             {
                 this.ConnectionName = connectionName;
-                this.MessageQueue = messageQueue;
+                this.MessageQueue = messageQueue.ToArray();
                 this.Exception = exception;
             }
         }
+        /// <summary>
+        /// 连接关闭事件委托
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         public delegate void ConCloseMessagesHandler(object sender, ConCloseMessagesEventArgs e);
         /// <summary>
         /// 连接关闭事件
@@ -170,11 +201,21 @@ namespace SocketLibrary
         #endregion
 
         #region 连接接入事件
+        /// <summary>
+        /// 连接事件委托
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         public delegate void ConnectedEventArgs(object sender, Connection e);
         /// <summary>
         /// 新连接接入事件
         /// </summary>
         public event ConnectedEventArgs Connected;
+        /// <summary>
+        /// 连接接入事件
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         protected void OnConnected(object sender, Connection e)
         {
             if (Connected != null)
@@ -183,18 +224,38 @@ namespace SocketLibrary
         #endregion
 
         #region Message事件
-
+        /// <summary>
+        /// 接收消息
+        /// </summary>
         public class MessageEventArgs : EventArgs
         {
-            public Message Message;
-            public Connection Connecction;
+            /// <summary>
+            /// 接收到的消息
+            /// </summary>
+            public Message Message { get; }
+            /// <summary>
+            /// 发送此消息的连接
+            /// </summary>
+            public Connection Connecction { get; }
+            /// <summary>
+            /// 初始化
+            /// </summary>
+            /// <param name="message"></param>
+            /// <param name="connection"></param>
             public MessageEventArgs(Message message, Connection connection)
             {
                 this.Message = message;
                 this.Connecction = connection;
             }
         }
+
+        /// <summary>
+        /// 接收消息委托
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         public delegate void MessageEventHandler(object sender, MessageEventArgs e);
+        
         /// <summary>
         /// 接收到消息事件
         /// </summary>
@@ -204,6 +265,7 @@ namespace SocketLibrary
             if (MessageReceived != null)
                 this.MessageReceived(sender, e);
         }
+        
         /// <summary>
         /// 消息已发出事件
         /// </summary>

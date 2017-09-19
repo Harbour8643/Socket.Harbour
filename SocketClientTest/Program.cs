@@ -34,8 +34,7 @@ namespace SocketClientTest
         }
         private static void sendMsg()
         {
-            SocketLibrary.Connection connection;
-            client.Connections.TryGetValue(client.ClientName, out connection);
+            SocketLibrary.Connection connection = client.GetConnection(client.ClientName);
             if (connection != null)
             {
                 SocketLibrary.Message message = new SocketLibrary.Message(SocketLibrary.Message.CommandType.SendMessage, "消息体");

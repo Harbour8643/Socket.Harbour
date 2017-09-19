@@ -47,7 +47,7 @@ namespace SocketLibrary
             get { return _messageQueue; }
             private set { _messageQueue = value; }
         }
-        protected ConcurrentQueue<Message> _messageQueue;
+        private ConcurrentQueue<Message> _messageQueue;
 
         private TcpClient _tcpClient;
         /// <summary>
@@ -59,6 +59,15 @@ namespace SocketLibrary
             private set { _tcpClient = value; }
         }
 
+        /// <summary>
+        /// 最后连接通信时间
+        /// </summary>
+        public DateTime LastConnTime
+        {
+            get { return _lastConnTime; }
+            set { _lastConnTime = value; }
+        }
+        private DateTime _lastConnTime;
         #endregion
 
         /// <summary>

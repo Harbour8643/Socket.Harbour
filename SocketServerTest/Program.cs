@@ -47,7 +47,7 @@ namespace SocketServerTest
         {
             i += 1;
             SocketLibrary.Connection connection = null;
-            foreach (var keyValue in _server.Connections)
+            foreach (var keyValue in _server.GetConnections())
             {
                 if ("192.168.3.150".Equals(keyValue.Value.NickName))
                 {

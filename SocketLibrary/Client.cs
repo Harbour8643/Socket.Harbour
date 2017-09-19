@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
@@ -17,7 +18,7 @@ namespace SocketLibrary
         private TcpClient client;
         private IPAddress ipAddress;
         private int port;
-        protected Thread _listenningClientThread;
+        private Thread _listenningClientThread;
         private string _clientName;
         /// <summary>
         /// 连接的Key
@@ -26,7 +27,6 @@ namespace SocketLibrary
         {
             get { return _clientName; }
         }
-
         /// <summary>
         /// 初始化
         /// </summary>
@@ -66,6 +66,25 @@ namespace SocketLibrary
             _listenningClientThread.Abort();
             this.EndListenAndSend();
         }
+        /// <summary>
+        /// 获取连接集合
+        /// </summary>
+        /// <returns></returns>
+        public ConcurrentDictionary<string, Connection> GetConnections()
+        {
+            return this.Connections;
+        }
+        /// <summary>
+        /// 获取指定连接名的连接,查询不到返回null
+        /// </summary>
+        /// <param name="connectionName"></param>
+        /// <returns></returns>
+        public Connection GetConnection(string connectionName)
+        {
+            Connection connection;
+            this.Connections.TryGetValue(connectionName, out connection);
+            return connection;
+        }
 
         private void Start()
         {
@@ -79,7 +98,7 @@ namespace SocketLibrary
                         client.SendTimeout = CONNECTTIMEOUT;
                         client.ReceiveTimeout = CONNECTTIMEOUT;
                         client.Connect(ipAddress, port);
-                        this._connections.TryAdd(this._clientName, new Connection(client, this._clientName));
+                        this.Connections.TryAdd(this._clientName, new Connection(client, this._clientName));
                     }
                     catch (Exception e)
                     { //定义连接失败事件
