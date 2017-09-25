@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<package >
+  <metadata>
+    <id>SocketLibrary</id>
+    <version>1.0.0</version>
+    <title>SocketLibrary</title>
+    <authors>Harbour</authors>
+    <owners>harbour</owners>
+    <licenseUrl>https://github.com/Harbour9354/Socket.Harbour/blob/master/LICENSE</licenseUrl>
+    <projectUrl>https://github.com/Harbour9354/Socket.Harbour</projectUrl>
+    <iconUrl>https://github.com/Harbour9354/Socket.Harbour/blob/master/icon.png</iconUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>
+Harbour.Utils library.
+
+Requires:
+- .NET Framework(>=4.0)
+    </description>
+    <copyright>Copyright 2016-2017</copyright>
+    <tags>Harbour Socket Tcp SocketLibrary</tags>
+   
+  </metadata>
+
+  <files>
+    <file src="..\bin\Release\SocketLibrary.dll" target="lib\net40" />
+	<file src="..\bin\Release\SocketLibrary.XML" target="lib\net40" />
+  </files>
+</package>
