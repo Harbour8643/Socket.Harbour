@@ -11,10 +11,10 @@
     <iconUrl>https://github.com/Harbour9354/Socket.Harbour/blob/master/icon.png</iconUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>
-Harbour.Utils library.
+      SocketLibrary
 
-Requires:
-- .NET Framework(>=4.0)
+      Requires:
+      - .NET Framework(>=4.0)
     </description>
     <copyright>Copyright 2016-2017</copyright>
     <tags>Harbour Socket Tcp SocketLibrary</tags>
