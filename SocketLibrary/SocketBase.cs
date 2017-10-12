@@ -20,6 +20,7 @@ namespace SocketLibrary
             //protected set { _connections = value; }
         }
         private ConcurrentDictionary<string, Connection> _connections;
+        private bool _isSendHeartbeat = false;//是否发送心跳包
 
         #endregion
         /// <summary>
@@ -38,10 +39,21 @@ namespace SocketLibrary
         /// <summary>
         /// 开始监听
         /// </summary>
-        protected void StartListenAndSend()
+        private void StartListenAndSend()
         {
             _listenningthread = new Thread(new ThreadStart(Listenning));
             _listenningthread.Start();
+        }
+        /// <summary>
+        /// 开始监听
+        /// </summary>
+        /// <param name="isSendHeartbeat"></param>
+        protected void StartListenAndSend(bool isSendHeartbeat)
+        {
+            this._isSendHeartbeat = isSendHeartbeat;
+            StartListenAndSend();
+            //_listenningthread = new Thread(new ThreadStart(Listenning));
+            //_listenningthread.Start();
         }
         /// <summary>
         /// 结束监听
@@ -55,22 +67,29 @@ namespace SocketLibrary
                 this._connections.TryRemove(keyValue.Key, out remConn);
                 remConn.Stop();
             }
+            this._isSendHeartbeat = false;
             _listenningthread.Abort();
         }
 
         private void Listenning()
         {
+            int times = 0;
             while (true)
             {
-                Thread.Sleep(200);
+                Thread.Sleep(500);
                 foreach (var keyValue in this._connections)
                 {
-                    //心跳检测
-                    if (!this.HeartbeatCheck(keyValue.Value))
+                    times++;
+                    if (this._isSendHeartbeat && times % 2 == 0)
                     {
-                        Connection remConn;
-                        this._connections.TryRemove(keyValue.Key, out remConn);
-                        continue;
+                        //心跳检测
+                        if (!this.HeartbeatCheck(keyValue.Value))
+                        {
+                            Connection remConn;
+                            this._connections.TryRemove(keyValue.Key, out remConn);
+                            continue;
+                        }
+                        times = 0;
                     }
                     try
                     {
@@ -255,7 +274,7 @@ namespace SocketLibrary
         /// <param name="sender"></param>
         /// <param name="e"></param>
         public delegate void MessageEventHandler(object sender, MessageEventArgs e);
-        
+
         /// <summary>
         /// 接收到消息事件
         /// </summary>
@@ -265,7 +284,7 @@ namespace SocketLibrary
             if (MessageReceived != null)
                 this.MessageReceived(sender, e);
         }
-        
+
         /// <summary>
         /// 消息已发出事件
         /// </summary>

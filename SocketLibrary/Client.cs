@@ -53,7 +53,7 @@ namespace SocketLibrary
         /// </summary>
         public void StartClient()
         {
-            this.StartListenAndSend();//开启父类的监听线程
+            this.StartListenAndSend(true);//开启父类的监听线程
             _listenningClientThread = new Thread(new ThreadStart(Start));
             _listenningClientThread.Start();
         }

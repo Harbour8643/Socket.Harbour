@@ -68,7 +68,7 @@ namespace SocketLibrary
             _listenConnection = new Thread(new ThreadStart(Start));
             _listenConnection.Start();
 
-            this.StartListenAndSend();
+            this.StartListenAndSend(false);
         }
 
         private void Start()
