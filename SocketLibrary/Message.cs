@@ -36,9 +36,9 @@ namespace SocketLibrary
         /// 主版本号
         /// </summary>
         public byte MainVersion;
-       /// <summary>
+        /// <summary>
         ///  次版本号
-       /// </summary>
+        /// </summary>
         public byte SecondVersion;
         /// <summary>
         /// 消息内容
@@ -56,6 +56,14 @@ namespace SocketLibrary
         {
             ConnectionName = null;
             Sent = false;
+        }
+        /// <summary>
+        /// 初始化
+        /// </summary>
+        /// <param name="messageBody">消息内容</param>
+        public Message(string messageBody)
+            : this(CommandType.SendMessage, messageBody)
+        {
         }
         /// <summary>
         /// 初始化
