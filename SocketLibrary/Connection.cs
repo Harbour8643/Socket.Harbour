@@ -139,6 +139,23 @@ namespace SocketLibrary
                 throw new Exception("目前网络不可读");
         }
 
+        /// <summary>
+        /// 发送消息
+        /// </summary>
+        /// <param name="msg"></param>
+        public void SendMsg(string msg)
+        {
+            Message message = new Message();
+            this._messageQueue.Enqueue(new Message(msg));
+        }
+        /// <summary>
+        /// 发送消息
+        /// </summary>
+        /// <param name="msg"></param>
+        public void SendMsg(Message msg)
+        {
+            this._messageQueue.Enqueue(msg);
+        }
 
     }
 }

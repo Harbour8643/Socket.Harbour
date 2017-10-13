@@ -67,22 +67,13 @@ namespace SocketLibrary
             this.EndListenAndSend();
         }
         /// <summary>
-        /// 获取连接集合
-        /// </summary>
-        /// <returns></returns>
-        public ConcurrentDictionary<string, Connection> GetConnections()
-        {
-            return this.Connections;
-        }
-        /// <summary>
         /// 获取指定连接名的连接,查询不到返回null
         /// </summary>
-        /// <param name="connectionName"></param>
         /// <returns></returns>
-        public Connection GetConnection(string connectionName)
+        public Connection GetConnection()
         {
-            Connection connection;
-            this.Connections.TryGetValue(connectionName, out connection);
+            Connection connection = null;
+            this.Connections.TryGetValue(this.ClientName, out connection);
             return connection;
         }
 

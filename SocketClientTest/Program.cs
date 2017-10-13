@@ -35,11 +35,10 @@ namespace SocketClientTest
         }
         private static void sendMsg()
         {
-            Connection connection = client.GetConnection(client.ClientName);
+            Connection connection = client.GetConnection();
             if (connection != null)
             {
-                Message message = new Message("消息体");
-                connection.messageQueue.Enqueue(message);
+                connection.SendMsg("消息体");
             }
             else
             {

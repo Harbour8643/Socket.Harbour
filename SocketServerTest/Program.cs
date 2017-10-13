@@ -57,8 +57,7 @@ namespace SocketServerTest
             }
             if (connection != null)
             {
-                Message message = new Message(i + "服务端发送消息体");
-                connection.messageQueue.Enqueue(message);
+                connection.SendMsg(i + "服务端发送消息体");
             }
             else
             {
