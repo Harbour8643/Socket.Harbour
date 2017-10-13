@@ -53,7 +53,6 @@ namespace SocketLibrary
         /// </summary>
         public void StartClient()
         {
-            this.StartListenAndSend(true);//开启父类的监听线程
             _listenningClientThread = new Thread(new ThreadStart(Start));
             _listenningClientThread.Start();
         }
@@ -91,11 +90,34 @@ namespace SocketLibrary
                         client.Connect(ipAddress, port);
                         this.Connections.TryAdd(this._clientName, new Connection(client, this._clientName));
                     }
-                    catch (Exception e)
+                    catch (Exception ex)
                     { //定义连接失败事件
+                        this.OnException(this, new ExceptionEventArgs("TcpClientAddErr", ex));
                     }
                 }
-                Thread.Sleep(200);
+                foreach (var keyValue in this.Connections)
+                {
+                    //客户端的心跳检测
+                    this.HeartbeatCheck(keyValue.Value);
+
+                    this.Receive(keyValue.Value);//接收数据
+
+                    //判断是否存活，20s没有更新就认为没有存活
+                    double timSpan = (DateTime.Now - keyValue.Value.LastConnTime).TotalSeconds;
+                    if (timSpan > 20)
+                    {
+                        Connection remConn;
+                        this.Connections.TryRemove(keyValue.Key, out remConn);
+
+                        ConCloseMessagesEventArgs ce = new ConCloseMessagesEventArgs(keyValue.Value.ConnectionName,
+                            new ConcurrentQueue<Message>(keyValue.Value.messageQueue), new Exception("长时间未更新存活时间"));
+                        this.OnConnectionClose(this, ce);
+                        continue;
+                    }
+
+                    this.Send(keyValue.Value); //发送数据
+                }
+                Thread.Sleep(500);
             }
         }
     }

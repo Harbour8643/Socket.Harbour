@@ -67,8 +67,6 @@ namespace SocketLibrary
 
             _listenConnection = new Thread(new ThreadStart(Start));
             _listenConnection.Start();
-
-            this.StartListenAndSend(false);
         }
 
         private void Start()
@@ -85,6 +83,27 @@ namespace SocketLibrary
                         this.Connections.TryAdd(piEndPoint, connection);
                         this.OnConnected(this, connection);
                     }
+
+                    foreach (var keyValue in this.Connections)
+                    {
+                        this.Receive(keyValue.Value);//接收数据
+
+                        //判断是否存活，20s没有更新就认为没有存活
+                        double timSpan = (DateTime.Now - keyValue.Value.LastConnTime).TotalSeconds;
+                        if (timSpan > 20)
+                        {
+                            Connection remConn;
+                            this.Connections.TryRemove(keyValue.Key, out remConn);
+
+                            ConCloseMessagesEventArgs ce = new ConCloseMessagesEventArgs(keyValue.Value.ConnectionName,
+                                new ConcurrentQueue<Message>(keyValue.Value.messageQueue), new Exception("长时间未更新存活时间"));
+                            this.OnConnectionClose(this, ce);
+                            continue;
+                        }
+
+                        this.Send(keyValue.Value); //发送数据
+                    }
+
                     Thread.Sleep(200);
                 }
             }
