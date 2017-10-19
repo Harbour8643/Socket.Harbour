@@ -9,11 +9,12 @@ namespace SocketServerTest
 {
     class Program
     {
+        static string ip = "192.168.32.180";
         static int i = 0;
         static Server _server;
         static void Main(string[] args)
         {
-            _server = new Server("192.168.3.150", 8088);
+            _server = new Server(ip, 4444);
             _server.MessageReceived += _server_MessageReceived;
             _server.Connected += _server_Connected;
             _server.ConnectionClose += _server_ConnectionClose;
@@ -40,8 +41,8 @@ namespace SocketServerTest
         private static void _server_MessageReceived(object sender, SocketBase.MessageEventArgs e)
         {
             string ss = e.Message.MessageBody;
-            Console.WriteLine(ss);
-            SendMsg();
+            Console.WriteLine(e.Connecction.ConnectionName + ss);
+            //SendMsg();
         }
 
         private static void SendMsg()
@@ -50,7 +51,7 @@ namespace SocketServerTest
             Connection connection = null;
             foreach (var keyValue in _server.GetConnections())
             {
-                if ("192.168.3.150".Equals(keyValue.Value.NickName))
+                if (ip.Equals(keyValue.Value.NickName))
                 {
                     connection = keyValue.Value;
                 }

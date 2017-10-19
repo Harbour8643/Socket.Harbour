@@ -90,7 +90,7 @@ namespace SocketLibrary
 
                         //判断是否存活，20s没有更新就认为没有存活
                         double timSpan = (DateTime.Now - keyValue.Value.LastConnTime).TotalSeconds;
-                        if (timSpan > 20)
+                        if (timSpan > 2)
                         {
                             Connection remConn;
                             this.Connections.TryRemove(keyValue.Key, out remConn);
@@ -107,7 +107,7 @@ namespace SocketLibrary
                     Thread.Sleep(200);
                 }
             }
-            catch
+            catch(Exception ex)
             {
             }
         }

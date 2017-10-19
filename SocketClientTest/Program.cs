@@ -9,10 +9,11 @@ namespace SocketClientTest
 {
     class Program
     {
+        static string ip = "192.168.32.180";
         static Client client;
         static void Main(string[] args)
         {
-            client = new Client("192.168.3.150", 8088);//此处输入自己的计算机IP地址，端口不能改变
+            client = new Client(ip, 4444);//此处输入自己的计算机IP地址，端口不能改变
             client.MessageReceived += _client_MessageReceived;
             client.MessageSent += client_MessageSent;
             client.StartClient();
