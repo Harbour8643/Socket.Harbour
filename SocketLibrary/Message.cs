@@ -3,6 +3,9 @@ using System.Net.Sockets;
 
 namespace SocketLibrary
 {
+    /// <summary>
+    /// ÏûÏ¢Àà
+    /// </summary>
     public class Message
     {
         /// <summary>

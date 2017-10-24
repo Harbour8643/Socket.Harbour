@@ -11,10 +11,13 @@ namespace SocketLibrary
     /// </summary>
     public class Client : SocketBase
     {
+        private const bool _isSendHeartbeat = true;
         /// <summary>
         ///  超时时间
         /// </summary>
+        /// 
         public const int CONNECTTIMEOUT = 10;
+
         private TcpClient client;
         private IPAddress ipAddress;
         private int port;
@@ -41,7 +44,7 @@ namespace SocketLibrary
         /// </summary>
         /// <param name="ipaddress">地址</param>
         /// <param name="port">端口</param>
-        public Client(IPAddress ipaddress, int port)
+        public Client(IPAddress ipaddress, int port) : base(_isSendHeartbeat)
         {
             this.ipAddress = ipaddress;
             this.port = port;
@@ -61,9 +64,9 @@ namespace SocketLibrary
         /// </summary>
         public void StopClient()
         {
+            this.EndListenAndSend();
             //缺少通知给服务端 自己主动关闭了
             _listenningClientThread.Abort();
-            this.EndListenAndSend();
         }
         /// <summary>
         /// 获取指定连接名的连接,查询不到返回null
@@ -95,28 +98,9 @@ namespace SocketLibrary
                         this.OnException(this, new ExceptionEventArgs("TcpClientAddErr", ex));
                     }
                 }
-                foreach (var keyValue in this.Connections)
-                {
-                    //客户端的心跳检测
-                    this.HeartbeatCheck(keyValue.Value);
+                //接收数据、发送数据 心跳检测
+                this.SenRecMsg();
 
-                    this.Receive(keyValue.Value);//接收数据
-
-                    //判断是否存活，20s没有更新就认为没有存活
-                    double timSpan = (DateTime.Now - keyValue.Value.LastConnTime).TotalSeconds;
-                    if (timSpan > 2)
-                    {
-                        Connection remConn;
-                        this.Connections.TryRemove(keyValue.Key, out remConn);
-
-                        ConCloseMessagesEventArgs ce = new ConCloseMessagesEventArgs(keyValue.Value.ConnectionName,
-                            new ConcurrentQueue<Message>(keyValue.Value.messageQueue), new Exception("长时间未更新存活时间"));
-                        this.OnConnectionClose(this, ce);
-                        continue;
-                    }
-
-                    this.Send(keyValue.Value); //发送数据
-                }
                 Thread.Sleep(500);
             }
         }

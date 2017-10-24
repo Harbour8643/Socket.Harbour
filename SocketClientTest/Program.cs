@@ -1,9 +1,5 @@
 ﻿using SocketLibrary;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SocketClientTest
 {
@@ -24,11 +20,11 @@ namespace SocketClientTest
             }
         }
 
-        private static void client_MessageSent(object sender, SocketBase.MessageEventArgs e)
+        private static void client_MessageSent(object sender, MessageEventArgs e)
         {
             Console.WriteLine(e.Connecction.ConnectionName + "发送成功");
         }
-        private static void _client_MessageReceived(object sender, SocketBase.MessageEventArgs e)
+        private static void _client_MessageReceived(object sender, MessageEventArgs e)
         {
             string msg = e.Message.MessageBody;
 

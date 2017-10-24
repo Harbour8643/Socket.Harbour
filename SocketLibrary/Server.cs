@@ -11,6 +11,8 @@ namespace SocketLibrary
     /// </summary>
     public class Server : SocketBase
     {
+        private const bool _isSendHeartbeat = false;
+
         private TcpListener _listener;
         private IPAddress ipAddress;
         private int port;
@@ -19,7 +21,7 @@ namespace SocketLibrary
         /// 默监听所有IP的此端口
         /// </summary>
         /// <param name="port">端口号</param>
-        public Server(int port)
+        public Server(int port) : base(_isSendHeartbeat)
         {
             this.ipAddress = IPAddress.Any;
             this.port = port;
@@ -29,7 +31,7 @@ namespace SocketLibrary
         /// </summary>
         /// <param name="ip">IP</param>
         /// <param name="port">端口号</param>
-        public Server(string ip, int port)
+        public Server(string ip, int port) : base(_isSendHeartbeat)
         {
             this.ipAddress = IPAddress.Parse(ip);
             this.port = port;
@@ -84,30 +86,13 @@ namespace SocketLibrary
                         this.OnConnected(this, connection);
                     }
 
-                    foreach (var keyValue in this.Connections)
-                    {
-                        this.Receive(keyValue.Value);//接收数据
-
-                        //判断是否存活，20s没有更新就认为没有存活
-                        double timSpan = (DateTime.Now - keyValue.Value.LastConnTime).TotalSeconds;
-                        if (timSpan > 2)
-                        {
-                            Connection remConn;
-                            this.Connections.TryRemove(keyValue.Key, out remConn);
-
-                            ConCloseMessagesEventArgs ce = new ConCloseMessagesEventArgs(keyValue.Value.ConnectionName,
-                                new ConcurrentQueue<Message>(keyValue.Value.messageQueue), new Exception("长时间未更新存活时间"));
-                            this.OnConnectionClose(this, ce);
-                            continue;
-                        }
-
-                        this.Send(keyValue.Value); //发送数据
-                    }
+                    //接收数据、发送数据 心跳检测
+                    this.SenRecMsg();
 
                     Thread.Sleep(200);
                 }
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
             }
         }
@@ -117,8 +102,8 @@ namespace SocketLibrary
         /// </summary>
         public void StopServer()
         {
-            _listenConnection.Abort();
             this.EndListenAndSend();
+            _listenConnection.Abort();
         }
     }
 }

@@ -9,8 +9,6 @@ namespace SocketLibrary
     /// </summary>
     public abstract class SocketBase
     {
-        #region 属性
-
         /// <summary>
         /// 已连接的Socket
         /// </summary>
@@ -20,15 +18,16 @@ namespace SocketLibrary
             //protected set { _connections = value; }
         }
         private ConcurrentDictionary<string, Connection> _connections;
-
-        #endregion
+        //是否心跳检测
+        private bool _isSendHeartbeat = false;
 
         /// <summary>
         /// 基类初始化
         /// </summary>
-        protected SocketBase()
+        public SocketBase(bool isSendHeartbeat)
         {
             this._connections = new ConcurrentDictionary<string, Connection>();
+            this._isSendHeartbeat = isSendHeartbeat;
         }
 
         /// <summary>
@@ -45,19 +44,45 @@ namespace SocketLibrary
             }
         }
 
+        /// <summary>
+        /// 接收数据、发送数据 心跳检测
+        /// </summary>
+        protected void SenRecMsg()
+        {
+            foreach (var keyValue in this.Connections)
+            {
+                //客户端的心跳检测
+                if (_isSendHeartbeat)
+                    this.HeartbeatCheck(keyValue.Value);
 
-        #region 受保护的方法
+                this.Receive(keyValue.Value);//接收数据
+
+                //判断是否存活，20s没有更新就认为没有存活
+                double timSpan = (DateTime.Now - keyValue.Value.LastConnTime).TotalSeconds;
+                if (timSpan > 2)
+                {
+                    Connection remConn;
+                    this.Connections.TryRemove(keyValue.Key, out remConn);
+
+                    ConCloseMessagesEventArgs ce = new ConCloseMessagesEventArgs(keyValue.Value.ConnectionName,
+                        new ConcurrentQueue<Message>(keyValue.Value.messageQueue), new Exception("长时间未更新存活时间"));
+                    this.OnConnectionClose(this, ce);
+                    continue;
+                }
+                this.Send(keyValue.Value); //发送数据
+            }
+        }
 
         /// <summary>
         /// 发送数据 缺少重发机制
         /// </summary>
         /// <param name="connection"></param>
-        protected void Send(Connection connection)
+        private void Send(Connection connection)
         {
             try
             {
-                if (!connection.NetworkStream.CanWrite)
-                    return;
+                //if (!connection.NetworkStream.CanWrite)
+                //    return;
                 Message message;
                 while (connection.messageQueue.TryDequeue(out message))
                 {
@@ -87,7 +112,7 @@ namespace SocketLibrary
         /// 接收数据
         /// </summary>
         /// <param name="connection"></param>
-        protected void Receive(Connection connection)
+        private void Receive(Connection connection)
         {
             try
             {
@@ -110,7 +135,7 @@ namespace SocketLibrary
         /// <summary>
         /// 心跳检测
         /// </summary>
-        protected bool HeartbeatCheck(Connection connection)
+        private bool HeartbeatCheck(Connection connection)
         {
             bool bol = false;
             byte[] buffer = new Message(Message.CommandType.Seartbeat, "心跳包，可忽略").ToBytes();
@@ -130,39 +155,7 @@ namespace SocketLibrary
             return bol;
         }
 
-        #endregion
-
         #region 连接关闭事件
-        /// <summary>
-        /// 连接关闭事件
-        /// </summary>
-        public class ConCloseMessagesEventArgs : EventArgs
-        {
-            /// <summary>
-            /// 连接名
-            /// </summary>
-            public string ConnectionName { get; }
-            /// <summary>
-            /// 未发送的消息集合
-            /// </summary>
-            public Message[] MessageQueue { get; }
-            /// <summary>
-            /// 错误信息
-            /// </summary>
-            public Exception Exception { get; }
-            /// <summary>
-            /// 初始化
-            /// </summary>
-            /// <param name="connectionName"></param>
-            /// <param name="messageQueue"></param>
-            /// <param name="exception"></param>
-            public ConCloseMessagesEventArgs(string connectionName, ConcurrentQueue<Message> messageQueue, Exception exception)
-            {
-                this.ConnectionName = connectionName;
-                this.MessageQueue = messageQueue.ToArray();
-                this.Exception = exception;
-            }
-        }
         /// <summary>
         /// 连接关闭事件委托
         /// </summary>
@@ -210,30 +203,6 @@ namespace SocketLibrary
         /// <summary>
         /// 错误事件
         /// </summary>
-        public class ExceptionEventArgs : EventArgs
-        {
-            /// <summary>
-            /// 连接名
-            /// </summary>
-            public string ExceptionName { get; }
-            /// <summary>
-            /// 错误信息
-            /// </summary>
-            public Exception Exception { get; }
-            /// <summary>
-            /// 初始化
-            /// </summary>
-            /// <param name="exceptionName"></param>
-            /// <param name="exception"></param>
-            public ExceptionEventArgs(string exceptionName, Exception exception)
-            {
-                this.ExceptionName = exceptionName;
-                this.Exception = exception;
-            }
-        }
-        /// <summary>
-        /// 错误事件
-        /// </summary>
         public delegate void ExceptionHandler(object sender, ExceptionEventArgs e);
         /// <summary>
         /// 错误事件
@@ -250,31 +219,6 @@ namespace SocketLibrary
         #endregion
 
         #region Message事件
-        /// <summary>
-        /// 接收消息
-        /// </summary>
-        public class MessageEventArgs : EventArgs
-        {
-            /// <summary>
-            /// 接收到的消息
-            /// </summary>
-            public Message Message { get; }
-            /// <summary>
-            /// 发送此消息的连接
-            /// </summary>
-            public Connection Connecction { get; }
-            /// <summary>
-            /// 初始化
-            /// </summary>
-            /// <param name="message"></param>
-            /// <param name="connection"></param>
-            public MessageEventArgs(Message message, Connection connection)
-            {
-                this.Message = message;
-                this.Connecction = connection;
-            }
-        }
-
         /// <summary>
         /// 接收消息委托
         /// </summary>
@@ -310,36 +254,6 @@ namespace SocketLibrary
         #endregion
 
         #region 消息发送失败事件
-        /// <summary>
-        /// 消息发送失败事件
-        /// </summary>
-        public class MessageSentErrEventArgs : EventArgs
-        {
-            /// <summary>
-            /// 连接名
-            /// </summary>
-            public string ConnectionName { get; }
-            /// <summary>
-            /// 未发送的消息集合
-            /// </summary>
-            public Message Message { get; }
-            /// <summary>
-            /// 错误信息
-            /// </summary>
-            public Exception Exception { get; }
-            /// <summary>
-            /// 初始化
-            /// </summary>
-            /// <param name="connectionName"></param>
-            /// <param name="message"></param>
-            /// <param name="exception"></param>
-            public MessageSentErrEventArgs(string connectionName, Message message, Exception exception)
-            {
-                this.ConnectionName = connectionName;
-                this.Message = message;
-                this.Exception = exception;
-            }
-        }
         /// <summary>
         /// 消息发送失败事件委托
         /// </summary>

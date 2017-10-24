@@ -26,11 +26,11 @@ namespace SocketServerTest
             }
         }
 
-        static void _server_MessageSent(object sender, SocketBase.MessageEventArgs e)
+        static void _server_MessageSent(object sender, MessageEventArgs e)
         {
             Console.WriteLine(e.Connecction.ConnectionName + "服务端发送成功");
         }
-        private static void _server_ConnectionClose(object sender, SocketBase.ConCloseMessagesEventArgs e)
+        private static void _server_ConnectionClose(object sender, ConCloseMessagesEventArgs e)
         {
             Console.WriteLine(e.ConnectionName + "连接关闭");
         }
@@ -38,7 +38,7 @@ namespace SocketServerTest
         {
             Console.WriteLine(e.ConnectionName + "连接成功");
         }
-        private static void _server_MessageReceived(object sender, SocketBase.MessageEventArgs e)
+        private static void _server_MessageReceived(object sender, MessageEventArgs e)
         {
             string ss = e.Message.MessageBody;
             Console.WriteLine(e.Connecction.ConnectionName + ss);
