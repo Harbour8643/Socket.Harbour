@@ -11,6 +11,7 @@ namespace SocketLibrary
     /// </summary>
     public class Client : SocketBase
     {
+        //是否心跳检测
         private const bool _isSendHeartbeat = true;
         /// <summary>
         ///  超时时间

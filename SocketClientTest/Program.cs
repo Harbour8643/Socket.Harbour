@@ -12,12 +12,18 @@ namespace SocketClientTest
             client = new Client(ip, 4444);//此处输入自己的计算机IP地址，端口不能改变
             client.MessageReceived += _client_MessageReceived;
             client.MessageSent += client_MessageSent;
+            client.Exception += Client_Exception;
             client.StartClient();
             while (true)
             {
                 System.Threading.Thread.Sleep(200);
                 sendMsg();
             }
+        }
+
+        private static void Client_Exception(object sender, ExceptionEventArgs e)
+        {
+            Console.WriteLine(string.Format("{0}\n{1}", e.ExceptionName, e.Exception.StackTrace));
         }
 
         private static void client_MessageSent(object sender, MessageEventArgs e)

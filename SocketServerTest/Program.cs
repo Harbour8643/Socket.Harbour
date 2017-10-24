@@ -19,6 +19,7 @@ namespace SocketServerTest
             _server.Connected += _server_Connected;
             _server.ConnectionClose += _server_ConnectionClose;
             _server.MessageSent += _server_MessageSent;
+            _server.Exception += _server_Exception;
             _server.StartServer();
             while (true)
             {
@@ -26,7 +27,12 @@ namespace SocketServerTest
             }
         }
 
-        static void _server_MessageSent(object sender, MessageEventArgs e)
+        private static void _server_Exception(object sender, ExceptionEventArgs e)
+        {
+            Console.WriteLine(string.Format("{0}\n{1}", e.ExceptionName, e.Exception.StackTrace));
+        }
+
+        private static void _server_MessageSent(object sender, MessageEventArgs e)
         {
             Console.WriteLine(e.Connecction.ConnectionName + "服务端发送成功");
         }
@@ -51,7 +57,7 @@ namespace SocketServerTest
             Connection connection = null;
             foreach (var keyValue in _server.GetConnections())
             {
-                if (ip.Equals(keyValue.Value.NickName))
+                if (ip.Equals(keyValue.Value.ConnectionNickName))
                 {
                     connection = keyValue.Value;
                 }

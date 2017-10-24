@@ -11,8 +11,8 @@ namespace SocketLibrary
     /// </summary>
     public class Server : SocketBase
     {
+        //ÊÇ·ñĞÄÌø¼ì²â
         private const bool _isSendHeartbeat = false;
-
         private TcpListener _listener;
         private IPAddress ipAddress;
         private int port;

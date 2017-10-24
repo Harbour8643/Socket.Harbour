@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Concurrent;
+using System.Net.Sockets;
 using System.Threading;
 
 namespace SocketLibrary
@@ -65,13 +66,15 @@ namespace SocketLibrary
                     this.Connections.TryRemove(keyValue.Key, out remConn);
 
                     ConCloseMessagesEventArgs ce = new ConCloseMessagesEventArgs(keyValue.Value.ConnectionName,
-                        new ConcurrentQueue<Message>(keyValue.Value.messageQueue), new Exception("长时间未更新存活时间"));
+                        new ConcurrentQueue<Message>(keyValue.Value.MessageQueue), new Exception("长时间未更新存活时间"));
                     this.OnConnectionClose(this, ce);
                     continue;
                 }
                 this.Send(keyValue.Value); //发送数据
             }
         }
+
+
 
         /// <summary>
         /// 发送数据 缺少重发机制
@@ -84,7 +87,7 @@ namespace SocketLibrary
                 //if (!connection.NetworkStream.CanWrite)
                 //    return;
                 Message message;
-                while (connection.messageQueue.TryDequeue(out message))
+                while (connection.MessageQueue.TryDequeue(out message))
                 {
                     try
                     {
@@ -118,7 +121,9 @@ namespace SocketLibrary
             {
                 if (connection.NetworkStream.CanRead && connection.NetworkStream.DataAvailable)
                 {
-                    Message message = connection.Parse();
+                    // Message message = connection.Parse();
+                    Message message = Parse(connection.ConnectionName, connection.NetworkStream);
+
                     //不是心跳包时触发接收事件
                     if (!message.Command.Equals(Message.CommandType.Seartbeat))
                     {
@@ -154,6 +159,54 @@ namespace SocketLibrary
             }
             return bol;
         }
+
+        /// <summary>
+        /// 解析消息
+        /// </summary>
+        /// <param name="connectionName"></param>
+        /// <param name="networkStream"></param>
+        /// <returns></returns>
+        private Message Parse(string connectionName, NetworkStream networkStream)
+        {
+            Message message = new Message();
+            //先读出前四个字节，即Message长度
+            byte[] buffer = new byte[4];
+            if (networkStream.DataAvailable)
+            {
+                int count = networkStream.Read(buffer, 0, 4);
+                if (count == 4)
+                {
+                    message.MessageLength = BitConverter.ToInt32(buffer, 0);
+                }
+                else
+                    throw new Exception("网络流长度不正确");
+            }
+            else
+                throw new Exception("目前网络不可读");
+            //读出消息的其它字节
+            buffer = new byte[message.MessageLength - 4];
+            if (networkStream.DataAvailable)
+            {
+                int count = networkStream.Read(buffer, 0, buffer.Length);
+                if (count == message.MessageLength - 4)
+                {
+                    message.Command = (Message.CommandType)buffer[0];
+                    message.MainVersion = buffer[1];
+                    message.SecondVersion = buffer[2];
+
+                    //读出消息体
+                    message.MessageBody = SocketFactory.DefaultEncoding.GetString(buffer, 3, buffer.Length - 3);
+                    message.ConnectionName = connectionName;
+
+                    return message;
+                }
+                else
+                    throw new Exception("网络流长度不正确");
+            }
+            else
+                throw new Exception("目前网络不可读");
+        }
+
 
         #region 连接关闭事件
         /// <summary>

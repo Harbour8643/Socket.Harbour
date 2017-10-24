@@ -12,7 +12,6 @@ namespace SocketLibrary
     {
         #region 属性
 
-        private NetworkStream _networkStream;
         /// <summary>
         ///  提供用于网络访问的基础数据流
         /// </summary>
@@ -21,7 +20,8 @@ namespace SocketLibrary
             get { return _networkStream; }
             private set { _networkStream = value; }
         }
-        private string _connectionName;
+        private NetworkStream _networkStream;
+
         /// <summary>
         /// 连接的Key
         /// </summary>
@@ -30,26 +30,28 @@ namespace SocketLibrary
             get { return _connectionName; }
             private set { _connectionName = value; }
         }
-        private string _nickName;
+        private string _connectionName;
+
         /// <summary>
-        /// 连接别名
+        /// 连接别名，只有IP，没有端口号
         /// </summary>
-        public string NickName
+        public string ConnectionNickName
         {
-            get { return _nickName; }
-            set { _nickName = value; }
+            get { return _connectionnickName; }
+            set { _connectionnickName = value; }
         }
+        private string _connectionnickName;
+
         /// <summary>
         /// 此链接的消息队列
         /// </summary>
-        public ConcurrentQueue<Message> messageQueue
+        public ConcurrentQueue<Message> MessageQueue
         {
             get { return _messageQueue; }
             private set { _messageQueue = value; }
         }
         private ConcurrentQueue<Message> _messageQueue;
 
-        private TcpClient _tcpClient;
         /// <summary>
         /// TcpClient
         /// </summary>
@@ -58,6 +60,7 @@ namespace SocketLibrary
             get { return _tcpClient; }
             private set { _tcpClient = value; }
         }
+        private TcpClient _tcpClient;
 
         /// <summary>
         /// 最后连接通信时间
@@ -71,7 +74,7 @@ namespace SocketLibrary
         #endregion
 
         /// <summary>
-        /// 
+        /// 初始化
         /// </summary>
         /// <param name="tcpClient">已建立连接的TcpClient</param>
         /// <param name="connectionName">连接名</param>
@@ -79,7 +82,7 @@ namespace SocketLibrary
         {
             this._tcpClient = tcpClient;
             this._connectionName = connectionName;
-            this.NickName = this._connectionName.Split(':')[0];
+            this.ConnectionNickName = this._connectionName.Split(':')[0];
             this._networkStream = this._tcpClient.GetStream();
             this._messageQueue = new ConcurrentQueue<Message>();
         }
@@ -95,10 +98,10 @@ namespace SocketLibrary
         }
 
         /// <summary>
-        /// 解析消息
+        ///废弃 解析消息
         /// </summary>
         /// <returns></returns>
-        public Message Parse()
+        private Message Parse()
         {
             Message message = new Message();
             //先读出前四个字节，即Message长度
