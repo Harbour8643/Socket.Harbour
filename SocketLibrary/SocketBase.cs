@@ -91,11 +91,11 @@ namespace SocketLibrary
                 {
                     try
                     {
-                        byte[] buffer = message.ToBytes();
+                        byte[] buffer = ToBytes(message);
                         lock (this)
                         {
                             connection.NetworkStream.Write(buffer, 0, buffer.Length);
-                            message.Sent = true;
+                            //message.Sent = true;
                         }
                         connection.LastConnTime = DateTime.Now;
                         this.OnMessageSent(this, new MessageEventArgs(message, connection));
@@ -143,7 +143,7 @@ namespace SocketLibrary
         private bool HeartbeatCheck(Connection connection)
         {
             bool bol = false;
-            byte[] buffer = new Message(Message.CommandType.Seartbeat, "心跳包，可忽略").ToBytes();
+            byte[] buffer = ToBytes(new Message(Message.CommandType.Seartbeat, "心跳包，可忽略"));
             try
             {
                 lock (this)
@@ -168,6 +168,7 @@ namespace SocketLibrary
         /// <returns></returns>
         private Message Parse(string connectionName, NetworkStream networkStream)
         {
+            int messageLength = 0;
             Message message = new Message();
             //先读出前四个字节，即Message长度
             byte[] buffer = new byte[4];
@@ -176,7 +177,7 @@ namespace SocketLibrary
                 int count = networkStream.Read(buffer, 0, 4);
                 if (count == 4)
                 {
-                    message.MessageLength = BitConverter.ToInt32(buffer, 0);
+                    messageLength = BitConverter.ToInt32(buffer, 0);
                 }
                 else
                     throw new Exception("网络流长度不正确");
@@ -184,11 +185,11 @@ namespace SocketLibrary
             else
                 throw new Exception("目前网络不可读");
             //读出消息的其它字节
-            buffer = new byte[message.MessageLength - 4];
+            buffer = new byte[messageLength - 4];
             if (networkStream.DataAvailable)
             {
                 int count = networkStream.Read(buffer, 0, buffer.Length);
-                if (count == message.MessageLength - 4)
+                if (count == messageLength - 4)
                 {
                     message.Command = (Message.CommandType)buffer[0];
                     message.MainVersion = buffer[1];
@@ -207,6 +208,29 @@ namespace SocketLibrary
                 throw new Exception("目前网络不可读");
         }
 
+        /// <summary>
+        /// 把消息转换成字节数组
+        /// </summary>
+        /// <param name="message">消息</param>
+        /// <returns></returns>
+        private byte[] ToBytes(Message message)
+        {
+            int messageLength = 7 + SocketFactory.DefaultEncoding.GetByteCount(message.MessageBody);//计算消息总长度。消息头长度为7加上消息体的长度。
+            byte[] buffer = new byte[messageLength];
+            //先将长度的4个字节写入到数组中。
+            BitConverter.GetBytes(messageLength).CopyTo(buffer, 0);
+            //将CommandHeader写入到数组中
+            buffer[4] = (byte)message.Command;
+            //将主版本号写入到数组中
+            buffer[5] = (byte)message.MainVersion;
+            //将次版本号写入到数组中
+            buffer[6] = (byte)message.SecondVersion;
+
+            //消息头已写完，现在写消息体。
+            byte[] body = new byte[messageLength - 7];
+            SocketFactory.DefaultEncoding.GetBytes(message.MessageBody).CopyTo(buffer, 7);
+            return buffer;
+        }
 
         #region 连接关闭事件
         /// <summary>
