@@ -13,12 +13,18 @@ namespace SocketClientTest
             client.MessageReceived += _client_MessageReceived;
             client.MessageSent += client_MessageSent;
             client.ConnectionClose += Client_ConnectionClose;
+            client.Connected += Client_Connected;
             client.StartClient();
             while (true)
             {
                 System.Threading.Thread.Sleep(200);
                 sendMsg();
             }
+        }
+
+        private static void Client_Connected(object sender, Connection e)
+        {
+            Console.WriteLine(e.ConnectionName + "连接成功");
         }
 
         private static void Client_ConnectionClose(object sender, ConCloseMessagesEventArgs e)

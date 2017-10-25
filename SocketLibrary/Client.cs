@@ -92,7 +92,9 @@ namespace SocketLibrary
                         client.SendTimeout = CONNECTTIMEOUT;
                         client.ReceiveTimeout = CONNECTTIMEOUT;
                         client.Connect(ipAddress, port);
-                        this.Connections.TryAdd(this._clientName, new Connection(client, this._clientName));
+                        Connection conn = new Connection(client, this._clientName);
+                        this.Connections.TryAdd(this._clientName, conn);
+                        this.OnConnected(this, conn);
                     }
                     catch (Exception ex)
                     {
