@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
@@ -28,35 +29,10 @@ namespace SocketLibrary
         /// <param name="connectionName"></param>
         /// <param name="messageQueue"></param>
         /// <param name="exception"></param>
-        public ConCloseMessagesEventArgs(string connectionName, ConcurrentQueue<Message> messageQueue, Exception exception)
+        public ConCloseMessagesEventArgs(string connectionName, List<Message> messageQueue, Exception exception)
         {
             this.ConnectionName = connectionName;
             this.MessageQueue = messageQueue.ToArray();
-            this.Exception = exception;
-        }
-    }
-
-    /// <summary>
-    /// 错误事件
-    /// </summary>
-    public class ExceptionEventArgs : EventArgs
-    {
-        /// <summary>
-        /// 连接名
-        /// </summary>
-        public string ExceptionName { get; }
-        /// <summary>
-        /// 错误信息
-        /// </summary>
-        public Exception Exception { get; }
-        /// <summary>
-        /// 初始化
-        /// </summary>
-        /// <param name="exceptionName"></param>
-        /// <param name="exception"></param>
-        public ExceptionEventArgs(string exceptionName, Exception exception)
-        {
-            this.ExceptionName = exceptionName;
             this.Exception = exception;
         }
     }
@@ -83,37 +59,6 @@ namespace SocketLibrary
         {
             this.Message = message;
             this.Connecction = connection;
-        }
-    }
-
-    /// <summary>
-    /// 消息发送失败事件
-    /// </summary>
-    public class MessageSentErrEventArgs : EventArgs
-    {
-        /// <summary>
-        /// 连接名
-        /// </summary>
-        public string ConnectionName { get; }
-        /// <summary>
-        /// 未发送的消息集合
-        /// </summary>
-        public Message Message { get; }
-        /// <summary>
-        /// 错误信息
-        /// </summary>
-        public Exception Exception { get; }
-        /// <summary>
-        /// 初始化
-        /// </summary>
-        /// <param name="connectionName"></param>
-        /// <param name="message"></param>
-        /// <param name="exception"></param>
-        public MessageSentErrEventArgs(string connectionName, Message message, Exception exception)
-        {
-            this.ConnectionName = connectionName;
-            this.Message = message;
-            this.Exception = exception;
         }
     }
 

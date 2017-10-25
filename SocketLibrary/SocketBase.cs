@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Net.Sockets;
 using System.Threading;
+using System.Linq;
 
 namespace SocketLibrary
 {
@@ -21,6 +23,7 @@ namespace SocketLibrary
         private ConcurrentDictionary<string, Connection> _connections;
         //是否心跳检测
         private bool _isSendHeartbeat = false;
+        private const int _aliveTimeout = 3;
 
         /// <summary>
         /// 基类初始化
@@ -53,89 +56,86 @@ namespace SocketLibrary
             foreach (var keyValue in this.Connections)
             {
                 //客户端的心跳检测
-                if (_isSendHeartbeat)
-                    this.HeartbeatCheck(keyValue.Value);
+                if (_isSendHeartbeat && !this.HeartbeatCheck(keyValue.Value))
+                {
+                    connClose(keyValue.Key);
+                    continue;
+                }
 
                 this.Receive(keyValue.Value);//接收数据
 
                 //判断是否存活，20s没有更新就认为没有存活
                 double timSpan = (DateTime.Now - keyValue.Value.LastConnTime).TotalSeconds;
-                if (timSpan > 2)
+                if (timSpan > _aliveTimeout && !this.HeartbeatCheck(keyValue.Value))
                 {
-                    Connection remConn;
-                    this.Connections.TryRemove(keyValue.Key, out remConn);
-
-                    ConCloseMessagesEventArgs ce = new ConCloseMessagesEventArgs(keyValue.Value.ConnectionName,
-                        new ConcurrentQueue<Message>(keyValue.Value.MessageQueue), new Exception("长时间未更新存活时间"));
-                    this.OnConnectionClose(this, ce);
+                    connClose(keyValue.Key);
                     continue;
                 }
-                this.Send(keyValue.Value); //发送数据
+                //发送数据
+                this.Send(keyValue.Value);
             }
         }
-
 
 
         /// <summary>
         /// 发送数据 缺少重发机制
         /// </summary>
         /// <param name="connection"></param>
-        private void Send(Connection connection)
+        private bool Send(Connection connection)
         {
+            bool bol = false;
+            Message message = null;
             try
             {
-                //if (!connection.NetworkStream.CanWrite)
-                //    return;
-                Message message;
                 while (connection.MessageQueue.TryDequeue(out message))
                 {
-                    try
+                    byte[] buffer = ToBytes(message);
+                    lock (this)
                     {
-                        byte[] buffer = ToBytes(message);
-                        lock (this)
-                        {
-                            connection.NetworkStream.Write(buffer, 0, buffer.Length);
-                            //message.Sent = true;
-                        }
+                        connection.NetworkStream.Write(buffer, 0, buffer.Length);
                         connection.LastConnTime = DateTime.Now;
-                        this.OnMessageSent(this, new MessageEventArgs(message, connection));
+                        bol = true;
                     }
-                    catch (Exception ex)
-                    {
-                        this.OnMessageSentErr(this, new MessageSentErrEventArgs(connection.ConnectionName, message, ex));
-                    }
+                    this.OnMessageSent(this, new MessageEventArgs(message, connection));
                 }
             }
             catch (Exception ex)
             {
-                this.OnException(this, new ExceptionEventArgs("SendErr", ex));
+                bol = false;
+                var messageList = connection.MessageQueue.ToList();
+                if (message != null)
+                    messageList.Insert(0, message);
+
+                connection.Stop();
+                connClose(connection.ConnectionName, messageList, ex);
             }
+
+            return bol;
         }
         /// <summary>
         /// 接收数据
         /// </summary>
         /// <param name="connection"></param>
-        private void Receive(Connection connection)
+        private bool Receive(Connection connection)
         {
+            bool bol = false;
             try
             {
                 if (connection.NetworkStream.CanRead && connection.NetworkStream.DataAvailable)
                 {
-                    // Message message = connection.Parse();
                     Message message = Parse(connection.ConnectionName, connection.NetworkStream);
-
                     //不是心跳包时触发接收事件
                     if (!message.Command.Equals(Message.CommandType.Seartbeat))
-                    {
                         this.OnMessageReceived(this, new MessageEventArgs(message, connection));
-                    }
                     connection.LastConnTime = DateTime.Now;
+                    bol = true;
                 }
             }
             catch (Exception ex)
             {
-                this.OnException(this, new ExceptionEventArgs("ReceiveErr", ex));
+                bol = false;
             }
+            return bol;
         }
         /// <summary>
         /// 心跳检测
@@ -155,7 +155,6 @@ namespace SocketLibrary
             }
             catch (Exception ex) //连接已经断开
             {
-                this.OnException(this, new ExceptionEventArgs("HeartbeatCheckErr", ex));
             }
             return bol;
         }
@@ -207,7 +206,6 @@ namespace SocketLibrary
             else
                 throw new Exception("目前网络不可读");
         }
-
         /// <summary>
         /// 把消息转换成字节数组
         /// </summary>
@@ -230,6 +228,40 @@ namespace SocketLibrary
             byte[] body = new byte[messageLength - 7];
             SocketFactory.DefaultEncoding.GetBytes(message.MessageBody).CopyTo(buffer, 7);
             return buffer;
+        }
+
+        /// <summary>
+        /// 触发连接关闭
+        /// </summary>
+        /// <param name="key"></param>
+        protected void connClose(string key)
+        {
+            Connection remConn;
+            this.Connections.TryRemove(key, out remConn);
+            connClose(remConn, new Exception("长时间未更新存活时间"));
+        }
+        /// <summary>
+        /// 触发连接关闭
+        /// </summary>
+        /// <param name="remConn"></param>
+        /// <param name="ex"></param>
+        protected void connClose(Connection remConn, Exception ex)
+        {
+            if (remConn != null)
+                remConn.Stop();
+            connClose(remConn.ConnectionName, remConn.MessageQueue.ToList(), ex);
+        }
+        /// <summary>
+        /// 触发连接关闭
+        /// </summary>
+        /// <param name="connectionName"></param>
+        /// <param name="messageQueue"></param>
+        /// <param name="ex"></param>
+        protected void connClose(string connectionName, List<Message> messageQueue, Exception ex)
+        {
+            ConCloseMessagesEventArgs ce = new ConCloseMessagesEventArgs(connectionName,
+                messageQueue, ex);
+            this.OnConnectionClose(this, ce);
         }
 
         #region 连接关闭事件
@@ -276,25 +308,6 @@ namespace SocketLibrary
         }
         #endregion
 
-        #region 全局错误事件
-        /// <summary>
-        /// 错误事件
-        /// </summary>
-        public delegate void ExceptionHandler(object sender, ExceptionEventArgs e);
-        /// <summary>
-        /// 错误事件
-        /// </summary>
-        public event ExceptionHandler Exception;
-        /// <summary>
-        /// 错误事件
-        /// </summary>
-        protected void OnException(object sender, ExceptionEventArgs e)
-        {
-            if (Exception != null)
-                this.Exception(sender, e);
-        }
-        #endregion
-
         #region Message事件
         /// <summary>
         /// 接收消息委托
@@ -327,27 +340,6 @@ namespace SocketLibrary
         {
             if (MessageSent != null)
                 this.MessageSent(sender, e);
-        }
-        #endregion
-
-        #region 消息发送失败事件
-        /// <summary>
-        /// 消息发送失败事件委托
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        public delegate void MessageSentErrHandler(object sender, MessageSentErrEventArgs e);
-        /// <summary>
-        /// 消息发送失败事件
-        /// </summary>
-        public event MessageSentErrHandler MessageSentErr;
-        /// <summary>
-        /// 消息发送失败事件
-        /// </summary>
-        protected void OnMessageSentErr(object sender, MessageSentErrEventArgs e)
-        {
-            if (MessageSentErr != null)
-                this.MessageSentErr(sender, e);
         }
         #endregion
     }

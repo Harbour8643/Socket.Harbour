@@ -1,5 +1,5 @@
 using System;
-using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
@@ -95,14 +95,15 @@ namespace SocketLibrary
                         this.Connections.TryAdd(this._clientName, new Connection(client, this._clientName));
                     }
                     catch (Exception ex)
-                    { //定义连接失败事件
-                        this.OnException(this, new ExceptionEventArgs("TcpClientAddErr", ex));
+                    {
+                        this.connClose(this._clientName, new List<Message>() { }, ex);
                     }
                 }
+
                 //接收数据、发送数据 心跳检测
                 this.SenRecMsg();
 
-                Thread.Sleep(500);
+                Thread.Sleep(1000);
             }
         }
     }

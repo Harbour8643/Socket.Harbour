@@ -9,7 +9,7 @@ namespace SocketServerTest
 {
     class Program
     {
-        static string ip = "192.168.32.180";
+        static string ip = "192.168.20.210";
         static int i = 0;
         static Server _server;
         static void Main(string[] args)
@@ -19,17 +19,11 @@ namespace SocketServerTest
             _server.Connected += _server_Connected;
             _server.ConnectionClose += _server_ConnectionClose;
             _server.MessageSent += _server_MessageSent;
-            _server.Exception += _server_Exception;
             _server.StartServer();
             while (true)
             {
                 System.Threading.Thread.Sleep(200);
             }
-        }
-
-        private static void _server_Exception(object sender, ExceptionEventArgs e)
-        {
-            Console.WriteLine(string.Format("{0}\n{1}", e.ExceptionName, e.Exception.StackTrace));
         }
 
         private static void _server_MessageSent(object sender, MessageEventArgs e)
@@ -65,10 +59,6 @@ namespace SocketServerTest
             if (connection != null)
             {
                 connection.SendMsg(i + "服务端发送消息体");
-            }
-            else
-            {
-                Console.WriteLine("发送失败！");
             }
         }
 
