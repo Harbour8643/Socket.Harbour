@@ -98,52 +98,6 @@ namespace SocketLibrary
         }
 
         /// <summary>
-        ///废弃 解析消息
-        /// </summary>
-        /// <returns></returns>
-        private Message Parse()
-        {
-            int messageLength = 0;
-            Message message = new Message();
-            //先读出前四个字节，即Message长度
-            byte[] buffer = new byte[4];
-            if (this._networkStream.DataAvailable)
-            {
-                int count = this._networkStream.Read(buffer, 0, 4);
-                if (count == 4)
-                {
-                    messageLength = BitConverter.ToInt32(buffer, 0);
-                }
-                else
-                    throw new Exception("网络流长度不正确");
-            }
-            else
-                throw new Exception("目前网络不可读");
-            //读出消息的其它字节
-            buffer = new byte[messageLength - 4];
-            if (this._networkStream.DataAvailable)
-            {
-                int count = this._networkStream.Read(buffer, 0, buffer.Length);
-                if (count == messageLength - 4)
-                {
-                    message.Command = (Message.CommandType)buffer[0];
-                    message.MainVersion = buffer[1];
-                    message.SecondVersion = buffer[2];
-
-                    //读出消息体
-                    message.MessageBody = SocketFactory.DefaultEncoding.GetString(buffer, 3, buffer.Length - 3);
-                    message.ConnectionName = this._connectionName;
-
-                    return message;
-                }
-                else
-                    throw new Exception("网络流长度不正确");
-            }
-            else
-                throw new Exception("目前网络不可读");
-        }
-
-        /// <summary>
         /// 发送消息
         /// </summary>
         /// <param name="msg"></param>

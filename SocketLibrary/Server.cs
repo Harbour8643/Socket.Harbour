@@ -13,6 +13,7 @@ namespace SocketLibrary
     {
         //是否心跳检测
         private const bool _isSendHeartbeat = false;
+        private Thread _listenConnection;
         private TcpListener _listener;
         private IPAddress ipAddress;
         private int port;
@@ -58,7 +59,6 @@ namespace SocketLibrary
             return connection;
         }
 
-        private Thread _listenConnection;
         /// <summary>
         /// 打开监听
         /// </summary>

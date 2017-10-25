@@ -96,27 +96,5 @@ namespace SocketLibrary
             this.SecondVersion = secondVersion;
             this.MessageBody = messageBody;
         }
-        /// <summary>
-        /// 废弃 转换成字节
-        /// </summary>
-        /// <returns></returns>
-        private byte[] ToBytes()
-        {
-            int MessageLength = 7 + SocketFactory.DefaultEncoding.GetByteCount(this.MessageBody);//计算消息总长度。消息头长度为7加上消息体的长度。
-            byte[] buffer = new byte[MessageLength];
-            //先将长度的4个字节写入到数组中。
-            BitConverter.GetBytes(MessageLength).CopyTo(buffer, 0);
-            //将CommandHeader写入到数组中
-            buffer[4] = (byte)this.Command;
-            //将主版本号写入到数组中
-            buffer[5] = (byte)this.MainVersion;
-            //将次版本号写入到数组中
-            buffer[6] = (byte)this.SecondVersion;
-
-            //消息头已写完，现在写消息体。
-            byte[] body = new byte[MessageLength - 7];
-            SocketFactory.DefaultEncoding.GetBytes(this.MessageBody).CopyTo(buffer, 7);
-            return buffer;
-        }
     }
 }
