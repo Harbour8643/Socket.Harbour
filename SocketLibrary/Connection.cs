@@ -92,9 +92,14 @@ namespace SocketLibrary
         /// </summary>
         public void Stop()
         {
-            _tcpClient.Client.Disconnect(false);
-            _networkStream.Close();
-            _tcpClient.Close();
+            try
+            {
+                _tcpClient.Client.Disconnect(false);
+                _networkStream.Close();
+                _tcpClient.Close();
+            }
+            catch (Exception ex)
+            { }
         }
 
         /// <summary>
