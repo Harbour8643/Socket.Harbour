@@ -15,62 +15,32 @@ namespace SocketLibrary
         /// <summary>
         ///  提供用于网络访问的基础数据流
         /// </summary>
-        public NetworkStream NetworkStream
-        {
-            get { return _networkStream; }
-            private set { _networkStream = value; }
-        }
-        private NetworkStream _networkStream;
+        public NetworkStream NetworkStream { get; private set; }
 
         /// <summary>
         /// 连接的Key
         /// </summary>
-        public string ConnectionName
-        {
-            get { return _connectionName; }
-            private set { _connectionName = value; }
-        }
-        private string _connectionName;
+        public string ConnectionName { get; private set; }
 
         /// <summary>
         /// 连接别名，只有IP，没有端口号
         /// </summary>
-        public string ConnectionNickName
-        {
-            get { return _connectionnickName; }
-            set { _connectionnickName = value; }
-        }
-        private string _connectionnickName;
+        public string ConnectionNickName { get; set; }
 
         /// <summary>
         /// 此链接的消息队列
         /// </summary>
-        public ConcurrentQueue<Message> MessageQueue
-        {
-            get { return _messageQueue; }
-            private set { _messageQueue = value; }
-        }
-        private ConcurrentQueue<Message> _messageQueue;
+        public ConcurrentQueue<Message> MessageQueue { get; private set; }
 
         /// <summary>
         /// TcpClient
         /// </summary>
-        public TcpClient TcpClient
-        {
-            get { return _tcpClient; }
-            private set { _tcpClient = value; }
-        }
-        private TcpClient _tcpClient;
+        public TcpClient TcpClient { get; private set; }
 
         /// <summary>
         /// 最后连接通信时间
         /// </summary>
-        public DateTime LastConnTime
-        {
-            get { return _lastConnTime; }
-            set { _lastConnTime = value; }
-        }
-        private DateTime _lastConnTime;
+        public DateTime LastConnTime { get; set; }
         #endregion
 
         /// <summary>
@@ -80,11 +50,11 @@ namespace SocketLibrary
         /// <param name="connectionName">连接名</param>
         public Connection(TcpClient tcpClient, string connectionName)
         {
-            this._tcpClient = tcpClient;
-            this._connectionName = connectionName;
-            this.ConnectionNickName = this._connectionName.Split(':')[0];
-            this._networkStream = this._tcpClient.GetStream();
-            this._messageQueue = new ConcurrentQueue<Message>();
+            this.TcpClient = tcpClient;
+            this.ConnectionName = connectionName;
+            this.ConnectionNickName = this.ConnectionName.Split(':')[0];
+            this.NetworkStream = this.TcpClient.GetStream();
+            this.MessageQueue = new ConcurrentQueue<Message>();
         }
 
         /// <summary>
@@ -94,9 +64,9 @@ namespace SocketLibrary
         {
             try
             {
-                _tcpClient.Client.Disconnect(false);
-                _networkStream.Close();
-                _tcpClient.Close();
+                TcpClient.Client.Disconnect(false);
+                NetworkStream.Close();
+                TcpClient.Close();
             }
             catch (Exception ex)
             { }
@@ -109,7 +79,7 @@ namespace SocketLibrary
         public void SendMsg(string msg)
         {
             Message message = new Message();
-            this._messageQueue.Enqueue(new Message(msg));
+            this.MessageQueue.Enqueue(new Message(msg));
         }
         /// <summary>
         /// 发送消息
@@ -117,7 +87,7 @@ namespace SocketLibrary
         /// <param name="msg"></param>
         public void SendMsg(Message msg)
         {
-            this._messageQueue.Enqueue(msg);
+            this.MessageQueue.Enqueue(msg);
         }
 
     }

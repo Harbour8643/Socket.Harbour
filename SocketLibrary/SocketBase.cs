@@ -15,12 +15,8 @@ namespace SocketLibrary
         /// <summary>
         /// 已连接的Socket
         /// </summary>
-        protected ConcurrentDictionary<string, Connection> Connections
-        {
-            get { return _connections; }
-            //protected set { _connections = value; }
-        }
-        private ConcurrentDictionary<string, Connection> _connections;
+        protected ConcurrentDictionary<string, Connection> Connections { get; }
+
         //是否心跳检测
         private bool _isSendHeartbeat = false;
         private const int _aliveTimeout = 3;
@@ -30,7 +26,7 @@ namespace SocketLibrary
         /// </summary>
         public SocketBase(bool isSendHeartbeat)
         {
-            this._connections = new ConcurrentDictionary<string, Connection>();
+            this.Connections = new ConcurrentDictionary<string, Connection>();
             this._isSendHeartbeat = isSendHeartbeat;
         }
 
@@ -40,10 +36,10 @@ namespace SocketLibrary
         protected void EndListenAndSend()
         {
             Thread.Sleep(200);//以防消息没有发完，或收完
-            foreach (var keyValue in this._connections)
+            foreach (var keyValue in this.Connections)
             {
                 Connection remConn;
-                this._connections.TryRemove(keyValue.Key, out remConn);
+                this.Connections.TryRemove(keyValue.Key, out remConn);
                 remConn.Stop();
             }
         }
@@ -62,7 +58,8 @@ namespace SocketLibrary
                     continue;
                 }
 
-                this.Receive(keyValue.Value);//接收数据
+                //接收数据
+                this.Receive(keyValue.Value);
 
                 //判断是否存活，20s没有更新就认为没有存活
                 double timSpan = (DateTime.Now - keyValue.Value.LastConnTime).TotalSeconds;
@@ -220,12 +217,11 @@ namespace SocketLibrary
             //将CommandHeader写入到数组中
             buffer[4] = (byte)message.Command;
             //将主版本号写入到数组中
-            buffer[5] = (byte)message.MainVersion;
+            buffer[5] = message.MainVersion;
             //将次版本号写入到数组中
-            buffer[6] = (byte)message.SecondVersion;
+            buffer[6] = message.SecondVersion;
 
             //消息头已写完，现在写消息体。
-            byte[] body = new byte[messageLength - 7];
             SocketFactory.DefaultEncoding.GetBytes(message.MessageBody).CopyTo(buffer, 7);
             return buffer;
         }
